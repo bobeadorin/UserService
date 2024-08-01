@@ -2,8 +2,6 @@
 
 namespace UserService.Utility
 {
-    public class FiedlValidator
-    {
         public static class FieldValidator
         {
             public static bool IsUsernameValid(string username)
@@ -66,4 +64,3 @@ namespace UserService.Utility
             }
         }
     }
-}

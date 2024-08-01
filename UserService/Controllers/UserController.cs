@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using UserService.DbConnection;
 using UserService.Models;
 using UserService.Utility;
-using static UserService.Utility.FiedlValidator;
+using static UserService.Utility.FieldValidator;
 
 namespace UserService.Controllers
 {
@@ -27,7 +27,18 @@ namespace UserService.Controllers
                 FieldValidator.IsUsernameValid(user.Username) &&
                 FieldValidator.IsEmailValid(user.Email))
             {
-                _context.Users.Add(user);
+                _context.Users.Add(new User
+                {
+                    Password = Hashing.toSHA256(user.Password),
+                    Username = user.Username,
+                    Email = user.Email,
+                    Address = user.Address,
+                    Country = user.Country,
+                    Currency = user.Currency,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    PhoneNumber = user.PhoneNumber,
+                });
                 await _context.SaveChangesAsync();
                 return CreatedAtAction(nameof(RegisterUser), new { id = user.Id }, user);
             }
@@ -40,7 +51,7 @@ namespace UserService.Controllers
         [HttpGet("/getAllUsers")]
         public IActionResult GetAllUsers()
         {
-           return Ok(_context.Users.Select( u => new {u.Id , u.Username , u.Email}).ToList());
+           return Ok(_context.Users.Select( u => new {u.Id , u.Username , u.Email, u.Password}).ToList());
         }
     }
 }

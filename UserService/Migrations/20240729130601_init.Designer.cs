@@ -11,7 +11,7 @@ using UserService.DbConnection;
 namespace UserService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240728124843_init")]
+    [Migration("20240729130601_init")]
     partial class init
     {
         /// <inheritdoc />
