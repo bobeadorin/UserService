@@ -17,7 +17,11 @@ namespace UserService.Controllers
         {
             _context = context;
         }
-
+        [HttpGet("/")]
+        public IActionResult Get()
+        {
+            return Ok("it works");
+        }
 
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
@@ -39,6 +43,7 @@ namespace UserService.Controllers
                     LastName = user.LastName,
                     PhoneNumber = user.PhoneNumber,
                 });
+                
                 await _context.SaveChangesAsync();
                 return CreatedAtAction(nameof(RegisterUser), new { id = user.Id }, user);
             }
