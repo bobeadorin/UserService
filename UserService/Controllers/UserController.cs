@@ -17,7 +17,11 @@ namespace UserService.Controllers
         {
             _context = context;
         }
-
+        [HttpGet("/")]
+        public IActionResult Get()
+        {
+            return Ok("it works");
+        }
 
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
@@ -27,7 +31,9 @@ namespace UserService.Controllers
                 FieldValidator.IsUsernameValid(user.Username) &&
                 FieldValidator.IsEmailValid(user.Email))
             {
+                user.Password = Hashing.toSHA256(user.Password);
                 _context.Users.Add(user);
+                
                 await _context.SaveChangesAsync();
                 return CreatedAtAction(nameof(RegisterUser), new { id = user.Id }, user);
             }
@@ -40,7 +46,7 @@ namespace UserService.Controllers
         [HttpGet("/getAllUsers")]
         public IActionResult GetAllUsers()
         {
-           return Ok(_context.Users.Select( u => new {u.Id , u.Username , u.Email}).ToList());
+           return Ok(_context.Users.Select( u => new {u.Id , u.Username , u.Email ,u.Password}).ToList());
         }
     }
 }
