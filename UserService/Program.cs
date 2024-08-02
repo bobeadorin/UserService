@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using UserService.DbConnection;
+using UserService.SqlDbUserRepository;
+using UserService.SqlDbUserRepository.Interfaces;
 
 namespace UserService
 {
@@ -20,6 +22,7 @@ namespace UserService
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
+            builder.Services.AddScoped<IUserRepository,UserRepository>();
 
             var app = builder.Build();
 

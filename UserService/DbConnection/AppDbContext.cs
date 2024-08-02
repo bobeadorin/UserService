@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using UserService.Models;
+using UserService.Utility;
 
 namespace UserService.DbConnection
 {
@@ -16,6 +17,11 @@ namespace UserService.DbConnection
         {
             optionsBuilder.UseSqlServer(_config.GetConnectionString("DatabaseConnection"));
         }
+        protected override void OnModelCreating (ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<User>().Property(u => u.Password).HasConversion(p => p.ToString() , p => Hashing.toSHA256(p));
+        }
+
 
         public DbSet<User> Users { get; set; }
 

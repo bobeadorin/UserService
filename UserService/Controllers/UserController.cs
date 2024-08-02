@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using UserService.DbConnection;
 using UserService.Models;
+using UserService.SqlDbUserRepository;
+using UserService.SqlDbUserRepository.Interfaces;
 using UserService.Utility;
 using static UserService.Utility.FieldValidator;
 
@@ -11,11 +13,11 @@ namespace UserService.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        public readonly AppDbContext _context;
+        private readonly IUserRepository _userRepository;
 
-        public UserController(AppDbContext context)
+        public UserController( IUserRepository userRepository )
         {
-            _context = context;
+            _userRepository = userRepository;
         }
         [HttpGet("/")]
         public IActionResult Get()
@@ -23,40 +25,47 @@ namespace UserService.Controllers
             return Ok("it works");
         }
 
+
+        [HttpGet("/getUserById/{id}")] 
+        public IActionResult GetUserById([FromRoute] int id) {
+            try
+            {
+                var result = _userRepository.GetUserById(id);
+                return Ok(result);
+            }
+            catch (Exception ex) { 
+            
+                return NotFound(ex.Message);
+            }
+          
+        }
+
+        [HttpPost("/login")]
+        public IActionResult Login([FromBody]UserLoginModel user) {
+
+            if (_userRepository.Login(user)) {
+                return Ok(); 
+            }
+            return BadRequest();
+        }
+
+
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
         {
+            var userRegistrationData = await _userRepository.RegisterUser(user);
 
-            if (FieldValidator.IsPasswordValid(user.Password) &&
-                FieldValidator.IsUsernameValid(user.Username) &&
-                FieldValidator.IsEmailValid(user.Email))
-            {
-                _context.Users.Add(new User
-                {
-                    Password = Hashing.toSHA256(user.Password),
-                    Username = user.Username,
-                    Email = user.Email,
-                    Address = user.Address,
-                    Country = user.Country,
-                    Currency = user.Currency,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    PhoneNumber = user.PhoneNumber,
-                });
-                
-                await _context.SaveChangesAsync();
-                return CreatedAtAction(nameof(RegisterUser), new { id = user.Id }, user);
+            if (userRegistrationData != null && userRegistrationData.IsRegistered) { 
+            
+                return Ok();
             }
-            else
-            {
-                return BadRequest("Bad input");
-            }
+            return BadRequest();
         }
 
         [HttpGet("/getAllUsers")]
         public IActionResult GetAllUsers()
         {
-           return Ok(_context.Users.Select( u => new {u.Id , u.Username , u.Email, u.Password}).ToList());
+            return Ok(_userRepository.GetAllUsers());
         }
     }
 }

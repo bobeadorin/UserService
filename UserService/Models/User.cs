@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace UserService.Models
 {
@@ -6,6 +7,7 @@ namespace UserService.Models
     {
         [JsonIgnore]
         public int Id { get; set; }
+        [EmailAddress]
         public string Email { get; set; }
         public string Password { get; set; }
         public string Username { get; set; }
