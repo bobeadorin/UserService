@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 using UserService.DbConnection;
 using UserService.SqlDbUserRepository;
 using UserService.SqlDbUserRepository.Interfaces;
+using Microsoft.IdentityModel.Tokens;
 
 namespace UserService
 {
@@ -13,8 +16,22 @@ namespace UserService
 
             // Add services to the container.
 
+            var secret = builder.Configuration.GetSection("JwtToken").GetSection("SecretKey").Value;
+            var key = Encoding.ASCII.GetBytes(secret);
+
+            builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(key)
+                };
+            });
+
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
             builder.Services.AddDbContext<AppDbContext>(options =>
@@ -35,6 +52,7 @@ namespace UserService
 
             app.UseHttpsRedirection();
 
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();

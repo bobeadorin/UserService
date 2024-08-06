@@ -1,5 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.IdentityModel.Tokens.Jwt;
+using UserService.AuthService;
+using UserService.AuthService.Models;
 using UserService.DbConnection;
 using UserService.Models;
 using UserService.SqlDbUserRepository;
@@ -13,12 +17,15 @@ namespace UserService.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+        private readonly IConfiguration _config;
         private readonly IUserRepository _userRepository;
 
-        public UserController( IUserRepository userRepository )
+        public UserController( IUserRepository userRepository ,IConfiguration config)
         {
             _userRepository = userRepository;
+            _config = config;
         }
+
         [HttpGet("/")]
         public IActionResult Get()
         {
@@ -27,7 +34,7 @@ namespace UserService.Controllers
 
 
         [HttpGet("/getUserById/{id}")] 
-        public IActionResult GetUserById([FromRoute] int id) {
+        public IActionResult GetUserById([FromRoute] Guid id) {
             try
             {
                 var result = _userRepository.GetUserById(id);
@@ -41,12 +48,28 @@ namespace UserService.Controllers
         }
 
         [HttpPost("/login")]
-        public IActionResult Login([FromBody]UserLoginModel user) {
+        public IActionResult Login([FromBody] UserLoginModel user)
+        {
 
-            if (_userRepository.Login(user)) {
-                return Ok(); 
+            var userData = _userRepository.Authenticate(user.Username, user.Password);
+
+            if (userData == null)
+            {
+                return Unauthorized();
             }
-            return BadRequest();
+
+            var accessToken = TokenUtility.GenerateAccessToken(userData, _config.GetSection("JwtToken")?.GetSection("SecretKey")?.Value);
+            var refreshToken = TokenUtility.GenerateRefreshToken();
+
+            _userRepository.SaveRefreshToken(refreshToken, userData.Id);
+
+            var response = new TokenResponse
+            {
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
+
+            return Ok(response);
         }
 
 
@@ -62,10 +85,32 @@ namespace UserService.Controllers
             return BadRequest();
         }
 
+        [Authorize]
         [HttpGet("/getAllUsers")]
         public IActionResult GetAllUsers()
         {
             return Ok(_userRepository.GetAllUsers());
+        }
+
+        [HttpPost("refresh")]
+        public IActionResult Refresh(TokenResponse tokenResponse)
+        {
+            var userId = TokenUtility.RetriveDataFromToken(tokenResponse.AccessToken);
+
+            var storedRefreshToken = _userRepository.GetRefreshToken(userId);
+
+            if (storedRefreshToken != tokenResponse.RefreshToken)
+              return Unauthorized();
+
+            var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(tokenResponse.RefreshToken, _config["JwtToken:SecretKey"]);
+
+            var response = new TokenResponse
+            {
+                AccessToken = newAccessToken,
+                RefreshToken = tokenResponse.RefreshToken 
+            };
+
+            return Ok(response);
         }
     }
 }

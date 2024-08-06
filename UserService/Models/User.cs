@@ -6,7 +6,7 @@ namespace UserService.Models
     public class User
     {
         [JsonIgnore]
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         [EmailAddress]
         public string Email { get; set; }
         public string Password { get; set; }
@@ -16,6 +16,8 @@ namespace UserService.Models
         public string Country { get; set; }
         public string Currency { get; set; }
         public string PhoneNumber { get; set; }
-        public string Address { get; set; }    
+        public string Address { get; set; }
+        [JsonIgnore]
+        public string RefreshToken { get; set; } = string.Empty;
     }
 }

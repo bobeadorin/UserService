@@ -26,7 +26,7 @@ namespace UserService.SqlDbUserRepository
             return users;
         }
 
-        public User GetUserById(int id)
+        public User GetUserById(Guid id)
         {
             var user = _context.Users.FirstOrDefault(u => u.Id == id);
 
@@ -40,7 +40,7 @@ namespace UserService.SqlDbUserRepository
 
         public bool Login(UserLoginModel user)
         {
-            var validUser = _context.Users.FirstOrDefault(u => u.Email == user.Email && u.Password == Hashing.toSHA256(user.Password));
+            var validUser = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == Hashing.toSHA256(user.Password));
 
             if (validUser != null)
             {
@@ -80,10 +80,39 @@ namespace UserService.SqlDbUserRepository
                 return new UserRegistrationState{IsRegistered = true,UserData = user};
             }
 
-            return new UserRegistrationState{IsRegistered = false,UserData = user};
-               
-
+            return new UserRegistrationState{IsRegistered = false,UserData = user};  
         }
 
+
+        public  User? Authenticate(string username, string password)
+        {
+            var user  = _context.Users.FirstOrDefault(u => u.Username == username && u.Password == Hashing.toSHA256(password));
+
+            return user;
+        }
+
+        public void SaveRefreshToken(string refreshToken ,Guid id)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+
+            if(user != null)
+            {
+                user.RefreshToken = refreshToken;
+                _context.SaveChanges();
+            }
+        }
+
+        public string GetRefreshToken(Guid userId)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
+
+            if (user != null) {
+
+                return user.RefreshToken;
+            }
+
+            return String.Empty;
+
+        }
     }
 }
