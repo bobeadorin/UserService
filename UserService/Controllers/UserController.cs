@@ -19,11 +19,13 @@ namespace UserService.Controllers
     {
         private readonly IConfiguration _config;
         private readonly IUserRepository _userRepository;
+        private readonly IJwtRefreshTokenRepository _jwtRefreshTokenRepository;
 
-        public UserController( IUserRepository userRepository ,IConfiguration config)
+        public UserController( IUserRepository userRepository ,IConfiguration config , IJwtRefreshTokenRepository jwtRefreshTokenRepository)
         {
             _userRepository = userRepository;
             _config = config;
+            _jwtRefreshTokenRepository = jwtRefreshTokenRepository;
         }
 
         [HttpGet("/")]
@@ -44,7 +46,6 @@ namespace UserService.Controllers
             
                 return NotFound(ex.Message);
             }
-          
         }
 
         [HttpPost("/login")]
@@ -58,10 +59,10 @@ namespace UserService.Controllers
                 return Unauthorized();
             }
 
-            var accessToken = TokenUtility.GenerateAccessToken(userData, _config.GetSection("JwtToken")?.GetSection("SecretKey")?.Value);
+            var accessToken = TokenUtility.GenerateAccessToken(userData,_config.GetSection("JwtToken")?.GetSection("SecretKey")?.Value);
             var refreshToken = TokenUtility.GenerateRefreshToken();
 
-            _userRepository.SaveRefreshToken(refreshToken, userData.Id);
+            _jwtRefreshTokenRepository.SaveRefreshToken(refreshToken, userData.Id);
 
             var response = new TokenResponse
             {
@@ -69,13 +70,22 @@ namespace UserService.Controllers
                 RefreshToken = refreshToken
             };
 
-            return Ok(response);
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                Expires = DateTime.UtcNow.AddDays(30),
+                SameSite = SameSiteMode.Strict
+            };
+            Response.Cookies.Append("jwt", response.RefreshToken, cookieOptions);
+            return Ok(response.AccessToken);
         }
 
-
+        //x7rqNySkeVnB9GuIdR6AWfwdqi80EBUvxLhlf7uy4M8%3D
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
         {
+
             var userRegistrationData = await _userRepository.RegisterUser(user);
 
             if (userRegistrationData != null && userRegistrationData.IsRegistered) { 
@@ -92,22 +102,26 @@ namespace UserService.Controllers
             return Ok(_userRepository.GetAllUsers());
         }
 
-        [HttpPost("refresh")]
-        public IActionResult Refresh(TokenResponse tokenResponse)
+        [HttpPost("/refresh")]
+        public IActionResult Refresh([FromBody] AccesTokenModel reqToken)
         {
-            var userId = TokenUtility.RetriveDataFromToken(tokenResponse.AccessToken);
+            var cookieValue = Request.Cookies["jwt"];
+            
+            var userId = TokenUtility.RetriveDataFromToken(reqToken.AccessToken);
 
-            var storedRefreshToken = _userRepository.GetRefreshToken(userId);
+            var isValid = _jwtRefreshTokenRepository.CheckRefreshTokenExpirationStatus(userId);
 
-            if (storedRefreshToken != tokenResponse.RefreshToken)
-              return Unauthorized();
+            var storedRefreshToken = _jwtRefreshTokenRepository.GetRefreshToken(userId);
 
-            var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(tokenResponse.RefreshToken, _config["JwtToken:SecretKey"]);
+            if (storedRefreshToken != cookieValue || isValid.IsExpired == true)
+                return Unauthorized();
+
+
+            var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(storedRefreshToken, _config["JwtToken:SecretKey"],userId);
 
             var response = new TokenResponse
             {
                 AccessToken = newAccessToken,
-                RefreshToken = tokenResponse.RefreshToken 
             };
 
             return Ok(response);

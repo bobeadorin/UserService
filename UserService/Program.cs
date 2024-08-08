@@ -18,7 +18,7 @@ namespace UserService
 
             var secret = builder.Configuration.GetSection("JwtToken").GetSection("SecretKey").Value;
             var key = Encoding.ASCII.GetBytes(secret);
-
+            Console.WriteLine(key);
             builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
             {
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -29,6 +29,11 @@ namespace UserService
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key)
                 };
+                Console.WriteLine(options.TokenValidationParameters.IssuerSigningKey);
+                Console.WriteLine(options.TokenValidationParameters.ValidateIssuerSigningKey);
+                Console.WriteLine(options.TokenValidationParameters.ValidateIssuerSigningKey);
+
+
             });
 
             builder.Services.AddControllers();
@@ -39,7 +44,10 @@ namespace UserService
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
+
             builder.Services.AddScoped<IUserRepository,UserRepository>();
+            builder.Services.AddScoped<IJwtRefreshTokenRepository, JwtRefreshTokenRepository>();
+
 
             var app = builder.Build();
 

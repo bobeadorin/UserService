@@ -17,7 +17,5 @@ namespace UserService.Models
         public string Currency { get; set; }
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
-        [JsonIgnore]
-        public string RefreshToken { get; set; } = string.Empty;
     }
 }

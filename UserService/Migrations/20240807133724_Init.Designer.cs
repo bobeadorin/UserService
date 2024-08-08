@@ -12,8 +12,8 @@ using UserService.DbConnection;
 namespace UserService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240806115406_Added new RefreshTokenField")]
-    partial class AddednewRefreshTokenField
+    [Migration("20240807133724_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -63,10 +63,6 @@ namespace UserService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -74,6 +70,21 @@ namespace UserService.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("a25c4a50-04ba-4bf8-be9d-17818c11844d"),
+                            Address = "Str Test",
+                            Country = "USA",
+                            Currency = "USD",
+                            Email = "bobeadorin@yahoo.com",
+                            FirstName = "Joe",
+                            LastName = "Doe",
+                            Password = "TestPassword123@",
+                            PhoneNumber = "0730733429",
+                            Username = "JoeDoeTheFirst"
+                        });
                 });
 #pragma warning restore 612, 618
         }

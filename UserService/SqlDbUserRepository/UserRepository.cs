@@ -41,7 +41,7 @@ namespace UserService.SqlDbUserRepository
         public bool Login(UserLoginModel user)
         {
             var validUser = _context.Users.FirstOrDefault(u => u.Username == user.Username && u.Password == Hashing.toSHA256(user.Password));
-
+            
             if (validUser != null)
             {
                 return true;
@@ -54,10 +54,11 @@ namespace UserService.SqlDbUserRepository
             throw new NotImplementedException();
         }
 
+  
 
         public async Task<UserRegistrationState> RegisterUser(User user)
         {
-            if (_userValidator.ValidateUser(user))
+            if (_userValidator.ValidateUser(user) && IsRegisteredDataValid(user)) 
             {
                 _context.Users.Add(new User
                 {
@@ -71,9 +72,6 @@ namespace UserService.SqlDbUserRepository
                     LastName = user.LastName,
                     PhoneNumber = user.PhoneNumber,
                 });
-
-                var user2 = user;
-                user.Password = Hashing.toSHA256(user2.Password);
 
                 await _context.SaveChangesAsync();
 
@@ -91,28 +89,15 @@ namespace UserService.SqlDbUserRepository
             return user;
         }
 
-        public void SaveRefreshToken(string refreshToken ,Guid id)
+        private bool IsRegisteredDataValid(User user)
         {
-            var user = _context.Users.FirstOrDefault(u => u.Id == id);
+            var userWithTheSameData = _context.Users.FirstOrDefault(u => u.Email == user.Email || u.Username == user.Username);
 
-            if(user != null)
+            if (userWithTheSameData == null)
             {
-                user.RefreshToken = refreshToken;
-                _context.SaveChanges();
+                return true;
             }
-        }
-
-        public string GetRefreshToken(Guid userId)
-        {
-            var user = _context.Users.FirstOrDefault(u => u.Id == userId);
-
-            if (user != null) {
-
-                return user.RefreshToken;
-            }
-
-            return String.Empty;
-
+            return false;
         }
     }
 }

@@ -11,7 +11,6 @@ namespace UserService.SqlDbUserRepository.Interfaces
         public User GetUserById(Guid id);
         public Task<UserRegistrationState> RegisterUser(User user);
         public User? Authenticate(string username, string password);
-        public void SaveRefreshToken(string refreshToken, Guid id);
-        public string GetRefreshToken(Guid userId);
+      
     }
 }

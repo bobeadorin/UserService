@@ -50,7 +50,7 @@ namespace UserService.AuthService
         }
 
 
-        public static string GenerateAccessTokenFromRefreshToken(string refreshToken, string secret)
+        public static string GenerateAccessTokenFromRefreshToken(string refreshToken, string secret, Guid userId)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var key = Encoding.ASCII.GetBytes(secret);
@@ -58,6 +58,7 @@ namespace UserService.AuthService
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
+                Subject = new ClaimsIdentity(new[] { new Claim("id", userId.ToString()) }),
                 Expires = DateTime.UtcNow.AddMinutes(15), // Extend expiration time
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };

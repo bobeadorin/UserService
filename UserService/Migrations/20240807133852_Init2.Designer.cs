@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using UserService.DbConnection;
 
@@ -11,9 +12,11 @@ using UserService.DbConnection;
 namespace UserService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240807133852_Init2")]
+    partial class Init2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -21,32 +24,6 @@ namespace UserService.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("UserService.Models.JwtRefreshToken", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreationTime")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsExpired")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("RefreshToken")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("jwtRefreshTokens");
-                });
 
             modelBuilder.Entity("UserService.Models.User", b =>
                 {
@@ -97,7 +74,7 @@ namespace UserService.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("bf04748a-ef7a-4faa-92de-80a7f0af2f43"),
+                            Id = new Guid("4d6821c0-6aed-4f80-b8a6-52b3307ce889"),
                             Address = "Str Test",
                             Country = "USA",
                             Currency = "USD",
@@ -108,17 +85,6 @@ namespace UserService.Migrations
                             PhoneNumber = "0730733429",
                             Username = "JoeDoeTheFirst"
                         });
-                });
-
-            modelBuilder.Entity("UserService.Models.JwtRefreshToken", b =>
-                {
-                    b.HasOne("UserService.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 #pragma warning restore 612, 618
         }
