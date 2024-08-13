@@ -29,9 +29,26 @@ namespace UserService
                     ValidateIssuerSigningKey = true,
                     IssuerSigningKey = new SymmetricSecurityKey(key)
                 };
-                Console.WriteLine(options.TokenValidationParameters.IssuerSigningKey);
-                Console.WriteLine(options.TokenValidationParameters.ValidateIssuerSigningKey);
-                Console.WriteLine(options.TokenValidationParameters.ValidateIssuerSigningKey);
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = context =>
+                    {
+                        // Add logging here
+                        var claims = context.Principal.Claims;
+                        foreach (var claim in claims)
+                        {
+                            Console.WriteLine($"{claim.Type}: {claim.Value}");
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        // Add logging here
+                        Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+                        return Task.CompletedTask;
+                    }
+                };
 
 
             });
