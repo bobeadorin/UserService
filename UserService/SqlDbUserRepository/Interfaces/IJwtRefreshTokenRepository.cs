@@ -6,6 +6,6 @@ namespace UserService.SqlDbUserRepository.Interfaces
     {
         public void SaveRefreshToken(string refreshToken, Guid id);
         public string GetRefreshToken(Guid userId);
-        public TokenExpirationStatus CheckRefreshTokenExpirationStatus(Guid userId);
+        public TokenExpirationStatus CheckRefreshTokenExpirationStatus(string refreshToken);
     }
 }

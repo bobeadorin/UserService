@@ -22,7 +22,7 @@ namespace UserService.SqlDbUserRepository
 
             if (user != null && userTokenId == null)
             {
-                _context.jwtRefreshTokens.Add(new JwtRefreshToken { User = user, RefreshToken = refreshToken, CreationTime = DateTime.Now.AddDays(30), IsExpired = false ,UserId = id });
+                _context.jwtRefreshTokens.Add(new JwtRefreshToken { User = user, RefreshToken = refreshToken, CreationTime = DateTime.Now, IsExpired = false ,UserId = id , ExpirationDate = DateTime.Now.AddDays(5) });
                 _context.SaveChanges();
             }
 
@@ -30,6 +30,8 @@ namespace UserService.SqlDbUserRepository
                 userTokenId.UserId = id;
                 userTokenId.RefreshToken = refreshToken;
                 userTokenId.IsExpired = false;
+                userTokenId.CreationTime = DateTime.Now;
+                userTokenId.ExpirationDate = userTokenId.CreationTime.AddDays(5);
                 _context.SaveChanges();
 
             }
@@ -48,9 +50,25 @@ namespace UserService.SqlDbUserRepository
 
         }
 
-        public TokenExpirationStatus CheckRefreshTokenExpirationStatus(Guid userId)
+
+        public Guid GetUserIdByRefreshToken(string refreshToken)
         {
-           var refreshTokenByUserId =  _context.jwtRefreshTokens.FirstOrDefault(u => u.UserId == userId);
+            var userToken = _context.jwtRefreshTokens.FirstOrDefault(u => u.RefreshToken == refreshToken);
+
+            if (userToken != null && userToken.IsExpired == false)
+            {
+                return userToken.UserId;
+            }
+
+            else {
+                throw new Exception("Not a valid refreshToken");
+            }
+
+        }
+
+        public TokenExpirationStatus CheckRefreshTokenExpirationStatus(string refreshToken)
+        {
+           var refreshTokenByUserId =  _context.jwtRefreshTokens.FirstOrDefault(u => u.RefreshToken == refreshToken);
 
             if(refreshTokenByUserId != null)
             {
@@ -61,7 +79,7 @@ namespace UserService.SqlDbUserRepository
                     return new TokenExpirationStatus { IsExpired = true };
                 }
             }
-
+            
             return new TokenExpirationStatus { IsExpired = false};
         }
     }
