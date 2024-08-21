@@ -11,6 +11,8 @@
         public const string Currency = "USD";
         public const string PhoneNumber = "0730733429";
         public const string Address = "Str Test";
+        public const int Likes = 0;
+        public const int PostsNumber = 0;
         
     }
 }

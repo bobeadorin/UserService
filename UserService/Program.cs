@@ -5,6 +5,7 @@ using UserService.DbConnection;
 using UserService.SqlDbUserRepository;
 using UserService.SqlDbUserRepository.Interfaces;
 using Microsoft.IdentityModel.Tokens;
+using UserService.MIddleware;
 
 namespace UserService
 {
@@ -59,6 +60,8 @@ namespace UserService
             }
 
             app.UseHttpsRedirection();
+
+            app.UseMiddleware<TokenCookieMiddleware>();
 
             app.UseAuthentication();
             app.UseAuthorization();
