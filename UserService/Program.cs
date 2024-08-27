@@ -5,7 +5,7 @@ using UserService.DbConnection;
 using UserService.SqlDbUserRepository;
 using UserService.SqlDbUserRepository.Interfaces;
 using Microsoft.IdentityModel.Tokens;
-using UserService.MIddleware;
+using UserService.Middleware;
 
 namespace UserService
 {
@@ -45,10 +45,10 @@ namespace UserService
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
             });
 
-
+            
             builder.Services.AddScoped<IUserRepository,UserRepository>();
             builder.Services.AddScoped<IJwtRefreshTokenRepository, JwtRefreshTokenRepository>();
-
+            builder.Services.AddScoped<IServiceLoginRepository, ServiceLoginRepository>();
 
             var app = builder.Build();
 

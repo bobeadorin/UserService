@@ -15,4 +15,10 @@
         public const int PostsNumber = 0;
         
     }
+
+    public static class ServiceAuthData
+    {
+        public const string Username = "devService";
+        public const string Password = "DevPassword123@";
+    }
 }

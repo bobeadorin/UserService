@@ -38,9 +38,15 @@ namespace UserService.DbConnection
                 PostsNumber = DbSeedData.PostsNumber,
             });
 
+            modelBuilder.Entity<ServiceLogin>().HasData(new ServiceLogin
+            {   Id = new Guid("b27bcc3a-8ac1-4e59-a9e6-ab1c86bec745"),
+                Username = ServiceAuthData.Username,
+                Password = Hashing.toSHA256(ServiceAuthData.Password)
+            });
         }
 
         public DbSet<User> Users { get; set; }
         public DbSet<JwtRefreshToken> jwtRefreshTokens { get; set; }
+        public DbSet<ServiceLogin> serviceLogin { get; set; }
     }
 }

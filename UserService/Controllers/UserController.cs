@@ -5,7 +5,6 @@ using UserService.AuthService.Models;
 using UserService.Constant;
 using UserService.Models;
 using UserService.SqlDbUserRepository.Interfaces;
-using static UserService.Utility.FieldValidator;
 
 namespace UserService.Controllers
 {
@@ -30,7 +29,7 @@ namespace UserService.Controllers
             return Ok("it works");
         }
 
-
+        [Authorize]
         [HttpGet("/getUserById/{id}")]
         public IActionResult GetUserById([FromRoute] Guid id) {
             try
@@ -86,13 +85,12 @@ namespace UserService.Controllers
             var response = new TokenResponse
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
+                RefreshToken = new RefreshToken { Token = refreshToken }
             };
 
-           
-
+            Response.Cookies.Append("RefreshToken", response.RefreshToken.Token, CookieTokenOptions.DevRefreshTokenCookie);
             Response.Cookies.Append("AccessToken", response.AccessToken, CookieTokenOptions.DevAccessTokenCookie);
-            Response.Cookies.Append("RefreshToken", response.RefreshToken, CookieTokenOptions.DevRefreshTokenCookie);
+
             return Ok(userData);
         }
 

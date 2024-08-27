@@ -12,8 +12,8 @@ using UserService.DbConnection;
 namespace UserService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240820092858_Init")]
-    partial class Init
+    [Migration("20240826195225_init")]
+    partial class init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -49,9 +49,34 @@ namespace UserService.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("jwtRefreshTokens");
+                });
+
+            modelBuilder.Entity("UserService.Models.ServiceLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("serviceLogin");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b27bcc3a-8ac1-4e59-a9e6-ab1c86bec745"),
+                            Password = "a25980c153c7dc3c19c130498f40386e4c7675d6306efe9cdd8845f1b33f0d73",
+                            Username = "devService"
+                        });
                 });
 
             modelBuilder.Entity("UserService.Models.User", b =>
@@ -134,17 +159,6 @@ namespace UserService.Migrations
                             PostsNumber = 0,
                             Username = "JoeDoeTheFirst"
                         });
-                });
-
-            modelBuilder.Entity("UserService.Models.JwtRefreshToken", b =>
-                {
-                    b.HasOne("UserService.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("UserService.Models.User", b =>

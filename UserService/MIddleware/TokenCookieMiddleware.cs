@@ -1,9 +1,8 @@
 ﻿
-using System.Runtime.CompilerServices;
 using UserService.Constant;
 using Microsoft.AspNetCore.Authorization;
 
-namespace UserService.MIddleware
+namespace UserService.Middleware
 {
     public class TokenCookieMiddleware
     {
@@ -25,8 +24,10 @@ namespace UserService.MIddleware
                 if (authorizeAttribute != null && !context.Request.Headers.ContainsKey("Authorization"))
                 {
                     var token = context.Request.Cookies[CookieConfig.AccessToken];
+                    var refreshToken = context.Request.Cookies[CookieConfig.RefreshToken];
 
-                    if (!string.IsNullOrEmpty(token))
+
+                    if (!string.IsNullOrEmpty(token) && String.IsNullOrEmpty(context.Request.Headers["Authorization"]))
                     {
                         context.Request.Headers.Add("Authorization", $"Bearer {token}");
                     }

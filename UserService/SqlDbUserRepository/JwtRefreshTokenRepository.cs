@@ -1,4 +1,5 @@
-﻿using UserService.DbConnection;
+﻿using UserService.AuthService.Models;
+using UserService.DbConnection;
 using UserService.Models;
 using UserService.SqlDbUserRepository.Interfaces;
 using UserService.SqlDbUserRepository.Models;
@@ -14,15 +15,14 @@ namespace UserService.SqlDbUserRepository
             _context = context;
         }
 
-
-        public  void SaveRefreshToken(string refreshToken, Guid id,  bool isTokenFromRefreshEndpoint)
-        {
+        public void SaveRefreshToken(string refreshToken, Guid id,  bool isTokenFromRefreshEndpoint )
+        { 
             var user = _context.Users.FirstOrDefault(u => u.Id == id);
             var userTokenId = _context.jwtRefreshTokens.FirstOrDefault(u => u.UserId == id);
 
             if (user != null && userTokenId == null)
             {
-                _context.jwtRefreshTokens.Add(new JwtRefreshToken { User = user, RefreshToken = refreshToken, CreationTime = DateTime.Now, IsExpired = false ,UserId = id , ExpirationDate = DateTime.Now.AddDays(5) });
+                _context.jwtRefreshTokens.Add(new JwtRefreshToken { RefreshToken = refreshToken, CreationTime = DateTime.Now, IsExpired = false ,UserId = id , ExpirationDate = DateTime.Now.AddDays(5) });
                 _context.SaveChanges();
             }
 
@@ -33,21 +33,53 @@ namespace UserService.SqlDbUserRepository
                 userTokenId.CreationTime = DateTime.Now;
                 userTokenId.ExpirationDate = isTokenFromRefreshEndpoint ? userTokenId.ExpirationDate : userTokenId.CreationTime.AddDays(5);
 
+                _context.jwtRefreshTokens.Update(userTokenId);
                 _context.SaveChanges();
             }
         }
 
-        public string GetRefreshToken(Guid userId)
+        public void SaveRefreshTokenForService(string refreshToken, Guid id, bool isTokenFromRefreshEndpoint)
+        {
+            var user = _context.serviceLogin.FirstOrDefault(u => u.Id == id);
+            var userTokenId = _context.jwtRefreshTokens.FirstOrDefault(u => u.UserId == id);
+
+            if (user != null && userTokenId == null)
+            {
+                _context.jwtRefreshTokens.Add(new JwtRefreshToken { RefreshToken = refreshToken, CreationTime = DateTime.Now, IsExpired = false, UserId = id, ExpirationDate = DateTime.Now.AddDays(5) });
+                _context.SaveChanges();
+            }
+
+            if (user != null && userTokenId != null)
+            {
+                userTokenId.UserId = id;
+                userTokenId.RefreshToken = refreshToken;
+                userTokenId.IsExpired = false;
+                userTokenId.CreationTime = DateTime.Now;
+                userTokenId.ExpirationDate = isTokenFromRefreshEndpoint ? userTokenId.ExpirationDate : userTokenId.CreationTime.AddDays(5);
+
+                _context.jwtRefreshTokens.Update(userTokenId);
+                _context.SaveChanges();
+            }
+        }
+
+
+        public RefreshToken GetRefreshToken(Guid userId)
         {
             var token = _context.jwtRefreshTokens.FirstOrDefault(u => u.UserId == userId);
 
             if (token != null && token.IsExpired == false )
             {
-                return token.RefreshToken;
+                return new RefreshToken
+                {
+                    Token = token.RefreshToken,
+                    Expiration = token.ExpirationDate
+                };
             }
 
-            return String.Empty;
-
+            return new RefreshToken
+                {
+                    Token = string.Empty,
+                }; 
         }
 
         public Guid GetUserIdByRefreshToken(string refreshToken)
