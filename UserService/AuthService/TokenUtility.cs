@@ -28,16 +28,18 @@ namespace UserService.AuthService
 
             return tokenHandler.WriteToken(token);
         }
-
         public static Guid RetriveDataFromToken(string token)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var jwtTokenString = token;
-            var jwtToken = tokenHandler.ReadJwtToken(jwtTokenString);
-            var userId = jwtToken.Claims.ToList();
-            
-            return new Guid(userId[0].Value);
-   
+            var jwtToken = tokenHandler.ReadJwtToken(token);
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == "id");
+
+            if (userIdClaim != null)
+            {
+                return new Guid(userIdClaim.Value);
+            }
+
+            throw new Exception("User ID claim not found in the token.");
         }
 
 
@@ -59,13 +61,12 @@ namespace UserService.AuthService
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", userId.ToString()) }),
-                Expires = DateTime.UtcNow.AddMinutes(15), // Extend expiration time
+                Expires = DateTime.UtcNow.AddMinutes(15), 
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
-
     }
 }

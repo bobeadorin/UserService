@@ -1,15 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+﻿using Azure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
 using UserService.AuthService;
 using UserService.AuthService.Models;
-using UserService.DbConnection;
+using UserService.Constant;
 using UserService.Models;
-using UserService.SqlDbUserRepository;
 using UserService.SqlDbUserRepository.Interfaces;
-using UserService.Utility;
-using static UserService.Utility.FieldValidator;
 
 namespace UserService.Controllers
 {
@@ -21,7 +17,7 @@ namespace UserService.Controllers
         private readonly IUserRepository _userRepository;
         private readonly IJwtRefreshTokenRepository _jwtRefreshTokenRepository;
 
-        public UserController( IUserRepository userRepository ,IConfiguration config , IJwtRefreshTokenRepository jwtRefreshTokenRepository)
+        public UserController(IUserRepository userRepository, IConfiguration config, IJwtRefreshTokenRepository jwtRefreshTokenRepository)
         {
             _userRepository = userRepository;
             _config = config;
@@ -34,18 +30,41 @@ namespace UserService.Controllers
             return Ok("it works");
         }
 
-
-        [HttpGet("/getUserById/{id}")] 
+        [Authorize]
+        [HttpGet("/getUserById/{id}")]
         public IActionResult GetUserById([FromRoute] Guid id) {
             try
             {
                 var result = _userRepository.GetUserById(id);
                 return Ok(result);
             }
-            catch (Exception ex) { 
-            
+            catch (Exception ex) {
+
                 return NotFound(ex.Message);
             }
+        }
+
+        [Authorize]
+        [HttpGet("/getUser")]
+        public IActionResult GetUser()
+        {
+            var accessToken = Request.Cookies[CookieConfig.AccessToken];
+            
+            if (accessToken == null) {
+                return Unauthorized();
+            }
+
+            var userData = _userRepository.GetUserDataByToken(accessToken);
+
+            return Ok(new UserProfileData
+            {
+               Username = userData.Username,
+               FirstName = userData.FirstName,
+               LastName = userData.LastName,    
+               PostsNumber = userData.PostsNumber,
+               FollowersNumber = userData.FollowersNumber,
+               Likes = userData.Likes
+            });
         }
 
         [HttpPost("/login")]
@@ -59,29 +78,23 @@ namespace UserService.Controllers
                 return Unauthorized();
             }
 
-            var accessToken = TokenUtility.GenerateAccessToken(userData,_config.GetSection("JwtToken")?.GetSection("SecretKey")?.Value);
+            var accessToken = TokenUtility.GenerateAccessToken(userData, _config["JwtToken:SecretKey"]);
             var refreshToken = TokenUtility.GenerateRefreshToken();
 
-            _jwtRefreshTokenRepository.SaveRefreshToken(refreshToken, userData.Id);
+            _jwtRefreshTokenRepository.SaveRefreshToken(refreshToken, userData.Id ,false);
 
             var response = new TokenResponse
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
+                RefreshToken = new RefreshToken { Token = refreshToken }
             };
 
-            var cookieOptions = new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = true,
-                Expires = DateTime.UtcNow.AddDays(30),
-                SameSite = SameSiteMode.Strict
-            };
-            Response.Cookies.Append("jwt", response.RefreshToken, cookieOptions);
-            return Ok(response.AccessToken);
+            Response.Cookies.Append("RefreshToken", response.RefreshToken.Token, CookieTokenOptions.DevRefreshTokenCookie);
+            Response.Cookies.Append("AccessToken", response.AccessToken, CookieTokenOptions.DevAccessTokenCookie);
+
+            return Ok(userData);
         }
 
-        //x7rqNySkeVnB9GuIdR6AWfwdqi80EBUvxLhlf7uy4M8%3D
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
         {
@@ -102,29 +115,42 @@ namespace UserService.Controllers
             return Ok(_userRepository.GetAllUsers());
         }
 
-        [HttpPost("/refresh")]
-        public IActionResult Refresh([FromBody] AccesTokenModel reqToken)
+
+        [HttpGet("/refresh")]
+        public IActionResult Refresh()
         {
-            var cookieValue = Request.Cookies["jwt"];
-            
-            var userId = TokenUtility.RetriveDataFromToken(reqToken.AccessToken);
-
-            var isValid = _jwtRefreshTokenRepository.CheckRefreshTokenExpirationStatus(userId);
-
-            var storedRefreshToken = _jwtRefreshTokenRepository.GetRefreshToken(userId);
-
-            if (storedRefreshToken != cookieValue || isValid.IsExpired == true)
-                return Unauthorized();
-
-
-            var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(storedRefreshToken, _config["JwtToken:SecretKey"],userId);
-
-            var response = new TokenResponse
+            var refreshTokenFromCookie = Request.Cookies[CookieConfig.RefreshToken];
+       
+            if(!string.IsNullOrEmpty(refreshTokenFromCookie))
             {
-                AccessToken = newAccessToken,
-            };
+                var tokenValidationStatus = _jwtRefreshTokenRepository.ValidateRefreshToken(refreshTokenFromCookie);
 
-            return Ok(response);
+                if (tokenValidationStatus.IsExpired == false && tokenValidationStatus.NotFound == false)
+                {
+                    try
+                    {
+                        var userId = _jwtRefreshTokenRepository.GetUserIdByRefreshToken(refreshTokenFromCookie);
+
+                        var newRefreshToken = TokenUtility.GenerateRefreshToken();
+
+                        var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(refreshTokenFromCookie, _config["JwtToken:SecretKey"], userId);
+
+                        _jwtRefreshTokenRepository.SaveRefreshToken(newRefreshToken, userId, true);
+
+                        Response.Cookies.Append("RefreshToken", newRefreshToken, CookieTokenOptions.DevRefreshTokenCookie);
+                        Response.Cookies.Append("AccessToken", newAccessToken, CookieTokenOptions.DevAccessTokenCookie);
+
+                        return Ok();
+                    }
+                    catch (Exception ex) { 
+                         return BadRequest(ex.Message);
+                    }
+                }
+                
+                return Unauthorized();
+            }
+
+            return BadRequest();
         }
     }
 }

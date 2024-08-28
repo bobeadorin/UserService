@@ -17,5 +17,10 @@ namespace UserService.Models
         public string Currency { get; set; }
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
+        public int Likes { get; set; }
+        public List<User>? Followers { get; set; }
+        public int FollowersNumber { get; set; }
+        public List<Guid>? Posts { get; set; }
+        public int PostsNumber { get; set; } 
     }
 }

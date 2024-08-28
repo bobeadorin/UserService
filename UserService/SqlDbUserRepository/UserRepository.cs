@@ -5,6 +5,7 @@ using UserService.Models;
 using UserService.SqlDbUserRepository.Interfaces;
 using UserService.Constant;
 using UserService.Utility;
+using UserService.AuthService;
 
 namespace UserService.SqlDbUserRepository
 {
@@ -36,6 +37,14 @@ namespace UserService.SqlDbUserRepository
             }
 
             throw new UserServiceException(ErrorMessages.UserNotFound, "1");
+        }
+
+        public User GetUserDataByToken(string token) { 
+
+            var userId = TokenUtility.RetriveDataFromToken(token);
+            var userData = GetUserById(userId);
+
+            return userData;
         }
 
         public bool Login(UserLoginModel user)
@@ -101,3 +110,5 @@ namespace UserService.SqlDbUserRepository
         }
     }
 }
+
+ 

@@ -31,6 +31,9 @@ namespace UserService.Migrations
                     b.Property<DateTime>("CreationTime")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("ExpirationDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<bool>("IsExpired")
                         .HasColumnType("bit");
 
@@ -43,9 +46,34 @@ namespace UserService.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("jwtRefreshTokens");
+                });
+
+            modelBuilder.Entity("UserService.Models.ServiceLogin", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Password")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("serviceLogin");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("b27bcc3a-8ac1-4e59-a9e6-ab1c86bec745"),
+                            Password = "a25980c153c7dc3c19c130498f40386e4c7675d6306efe9cdd8845f1b33f0d73",
+                            Username = "devService"
+                        });
                 });
 
             modelBuilder.Entity("UserService.Models.User", b =>
@@ -74,9 +102,15 @@ namespace UserService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("FollowersNumber")
+                        .HasColumnType("int");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Likes")
+                        .HasColumnType("int");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -86,39 +120,54 @@ namespace UserService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Posts")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PostsNumber")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId");
+
                     b.ToTable("Users");
 
                     b.HasData(
                         new
                         {
-                            Id = new Guid("bf04748a-ef7a-4faa-92de-80a7f0af2f43"),
+                            Id = new Guid("d3e37998-8cbf-4162-ba83-b7f28758b033"),
                             Address = "Str Test",
                             Country = "USA",
                             Currency = "USD",
                             Email = "bobeadorin@yahoo.com",
                             FirstName = "Joe",
+                            FollowersNumber = 0,
                             LastName = "Doe",
+                            Likes = 0,
                             Password = "1f3085b93c4df1d85d28aa5d64efa559c0754bfd68dff0092a8eee16659f917c",
                             PhoneNumber = "0730733429",
+                            PostsNumber = 0,
                             Username = "JoeDoeTheFirst"
                         });
                 });
 
-            modelBuilder.Entity("UserService.Models.JwtRefreshToken", b =>
+            modelBuilder.Entity("UserService.Models.User", b =>
                 {
-                    b.HasOne("UserService.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("UserService.Models.User", null)
+                        .WithMany("Followers")
+                        .HasForeignKey("UserId");
+                });
 
-                    b.Navigation("User");
+            modelBuilder.Entity("UserService.Models.User", b =>
+                {
+                    b.Navigation("Followers");
                 });
 #pragma warning restore 612, 618
         }
