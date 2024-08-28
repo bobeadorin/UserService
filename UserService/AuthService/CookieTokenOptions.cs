@@ -22,13 +22,16 @@
         {
             HttpOnly = true,
             Secure = true,
+            IsEssential = true,
             Expires = DateTime.UtcNow.AddDays(5),
             SameSite = SameSiteMode.None
+           
         };
         public static CookieOptions DevAccessTokenCookie = new CookieOptions()
         {
             HttpOnly = true,
             Secure = true,
+            IsEssential = true,
             Expires = DateTime.UtcNow.AddMinutes(15),
             SameSite = SameSiteMode.None
         };

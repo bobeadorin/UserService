@@ -31,7 +31,11 @@ namespace UserService.SqlDbUserRepository
                 userTokenId.RefreshToken = refreshToken;
                 userTokenId.IsExpired = false;
                 userTokenId.CreationTime = DateTime.Now;
-                userTokenId.ExpirationDate = isTokenFromRefreshEndpoint ? userTokenId.ExpirationDate : userTokenId.CreationTime.AddDays(5);
+                if(isTokenFromRefreshEndpoint == false)
+                {
+                    userTokenId.ExpirationDate =  userTokenId.CreationTime.AddDays(5);
+
+                }
 
                 _context.jwtRefreshTokens.Update(userTokenId);
                 _context.SaveChanges();
@@ -99,36 +103,46 @@ namespace UserService.SqlDbUserRepository
         public TokenExpirationStatus ValidateRefreshToken(string refreshToken)
         {
             var userRefreshToken = _context.jwtRefreshTokens.FirstOrDefault(u => u.RefreshToken == refreshToken);
-            var isTokenExpired = CheckAndSetRefreshTokenExpirationStatus(refreshToken); 
-
-            if(userRefreshToken != null && isTokenExpired == false  && refreshToken == userRefreshToken.RefreshToken)
+            if(userRefreshToken != null)
             {
+                var isTokenExpired = CheckRefreshTokenExpirationStatus(userRefreshToken);
+
+                if ( isTokenExpired == true)
+                {
+                    userRefreshToken.IsExpired = true;
+                    _context.jwtRefreshTokens.Update(userRefreshToken);
+                    _context.SaveChanges();
+
+                    return new TokenExpirationStatus
+                    {
+                        IsExpired = true,
+                        NotFound = false
+                    };
+                }
+
                 return new TokenExpirationStatus
                 {
                     IsExpired = false,
                     ExpirationDate = userRefreshToken.ExpirationDate,
+                    NotFound = false
                 };
             }
 
-            return  new TokenExpirationStatus
+            return new TokenExpirationStatus
             {
-                IsExpired = true,
+                NotFound = true
             };
+
         }
 
-        private bool CheckAndSetRefreshTokenExpirationStatus(string refreshToken)
+        private bool CheckRefreshTokenExpirationStatus(JwtRefreshToken refreshToken)
         {
-            var refreshTokenByUserId = _context.jwtRefreshTokens.FirstOrDefault(u => u.RefreshToken == refreshToken);
-
-            if (refreshTokenByUserId != null)
+        
+            if (DateTime.Now > refreshToken.ExpirationDate)
             {
-                if (DateTime.Now > refreshTokenByUserId.ExpirationDate)
-                {
-                    refreshTokenByUserId.IsExpired = true;
-                    _context.SaveChanges();
-                    return true;
-                }
+                return true;
             }
+            
             return false;
         }
     }

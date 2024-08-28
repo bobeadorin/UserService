@@ -33,6 +33,7 @@ namespace UserService.Middleware
                     }
                 }
            }
+            
             await _next(context);
         }
     }

@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using Azure;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using UserService.AuthService;
 using UserService.AuthService.Models;
@@ -119,26 +120,31 @@ namespace UserService.Controllers
         public IActionResult Refresh()
         {
             var refreshTokenFromCookie = Request.Cookies[CookieConfig.RefreshToken];
-            
+       
             if(!string.IsNullOrEmpty(refreshTokenFromCookie))
             {
                 var tokenValidationStatus = _jwtRefreshTokenRepository.ValidateRefreshToken(refreshTokenFromCookie);
 
-                if (tokenValidationStatus.IsExpired == false)
+                if (tokenValidationStatus.IsExpired == false && tokenValidationStatus.NotFound == false)
                 {
+                    try
+                    {
+                        var userId = _jwtRefreshTokenRepository.GetUserIdByRefreshToken(refreshTokenFromCookie);
 
-                    var userId = _jwtRefreshTokenRepository.GetUserIdByRefreshToken(refreshTokenFromCookie);
+                        var newRefreshToken = TokenUtility.GenerateRefreshToken();
 
-                    var newRefreshToken = TokenUtility.GenerateRefreshToken();
+                        var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(refreshTokenFromCookie, _config["JwtToken:SecretKey"], userId);
 
-                    var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(refreshTokenFromCookie, _config["JwtToken:SecretKey"], userId);
+                        _jwtRefreshTokenRepository.SaveRefreshToken(newRefreshToken, userId, true);
 
-                    _jwtRefreshTokenRepository.SaveRefreshToken(newRefreshToken, userId, true);
+                        Response.Cookies.Append("RefreshToken", newRefreshToken, CookieTokenOptions.DevRefreshTokenCookie);
+                        Response.Cookies.Append("AccessToken", newAccessToken, CookieTokenOptions.DevAccessTokenCookie);
 
-                    Response.Cookies.Append(CookieConfig.AccessToken, newAccessToken, CookieTokenOptions.DevAccessTokenCookie);
-                    Response.Cookies.Append(CookieConfig.RefreshToken, newRefreshToken, CookieTokenOptions.DevRefreshTokenCookie);
-
-                    return Ok();
+                        return Ok();
+                    }
+                    catch (Exception ex) { 
+                         return BadRequest(ex.Message);
+                    }
                 }
                 
                 return Unauthorized();
