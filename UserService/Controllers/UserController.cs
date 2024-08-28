@@ -1,6 +1,7 @@
 ﻿using Azure;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using UserService.AuthService;
 using UserService.AuthService.Models;
 using UserService.Constant;
@@ -78,7 +79,7 @@ namespace UserService.Controllers
                 return Unauthorized();
             }
 
-            var accessToken = TokenUtility.GenerateAccessToken(userData, _config["JwtToken:SecretKey"]);
+            var accessToken = TokenUtility.GenerateAccessToken(userData.Id, _config["JwtToken:SecretKey"]);
             var refreshToken = TokenUtility.GenerateRefreshToken();
 
             _jwtRefreshTokenRepository.SaveRefreshToken(refreshToken, userData.Id ,false);
@@ -89,11 +90,58 @@ namespace UserService.Controllers
                 RefreshToken = new RefreshToken { Token = refreshToken }
             };
 
-            Response.Cookies.Append("RefreshToken", response.RefreshToken.Token, CookieTokenOptions.DevRefreshTokenCookie);
-            Response.Cookies.Append("AccessToken", response.AccessToken, CookieTokenOptions.DevAccessTokenCookie);
+            Response.Cookies.Append(CookieConfig.AccessToken, accessToken, CookieTokenOptions.DevAccessTokenCookie);
+            Response.Cookies.Append(CookieConfig.RefreshToken, refreshToken, CookieTokenOptions.DevRefreshTokenCookie);
+
 
             return Ok(userData);
         }
+
+
+        [HttpGet("/refresh")]
+        public IActionResult Refresh()
+        {
+            var refreshTokenFromCookie = Request.Cookies[CookieConfig.RefreshToken];
+
+            if (string.IsNullOrEmpty(refreshTokenFromCookie)) return NotFound();
+            
+            var tokenValidationStatus = _jwtRefreshTokenRepository.ValidateRefreshToken(refreshTokenFromCookie);
+
+            if (tokenValidationStatus.IsExpired  || tokenValidationStatus.NotFound ) return BadRequest();
+            
+            try
+            {
+                var userId = _jwtRefreshTokenRepository.GetUserIdByRefreshToken(refreshTokenFromCookie);
+
+                var newAccessToken = TokenUtility.GenerateAccessToken(userId, _config["JwtToken:SecretKey"]);
+
+                Response.Cookies.Append("AccessToken", newAccessToken, CookieTokenOptions.DevAccessTokenCookie);
+
+
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
+        [HttpGet("/logout")]
+        public IActionResult Logout()
+        {
+            var accessCookie = Request.Cookies[CookieConfig.AccessToken];
+            var refreshCookie = Request.Cookies[CookieConfig.RefreshToken];
+
+            if(String.IsNullOrEmpty(accessCookie) && String.IsNullOrEmpty(refreshCookie)) return BadRequest();
+
+            Response.Cookies.Append("AccessToken", String.Empty, CookieTokenOptions.DevAccessTokenCookieLogout);
+            Response.Cookies.Append("RefreshToken", String.Empty, CookieTokenOptions.DevRefreshTokenCookieLogout);
+            return Ok("logoutCompleted");
+         }
+
+
+
 
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
@@ -108,7 +156,6 @@ namespace UserService.Controllers
             return BadRequest();
         }
 
-        [Authorize]
         [HttpGet("/getAllUsers")]
         public IActionResult GetAllUsers()
         {
@@ -116,41 +163,5 @@ namespace UserService.Controllers
         }
 
 
-        [HttpGet("/refresh")]
-        public IActionResult Refresh()
-        {
-            var refreshTokenFromCookie = Request.Cookies[CookieConfig.RefreshToken];
-       
-            if(!string.IsNullOrEmpty(refreshTokenFromCookie))
-            {
-                var tokenValidationStatus = _jwtRefreshTokenRepository.ValidateRefreshToken(refreshTokenFromCookie);
-
-                if (tokenValidationStatus.IsExpired == false && tokenValidationStatus.NotFound == false)
-                {
-                    try
-                    {
-                        var userId = _jwtRefreshTokenRepository.GetUserIdByRefreshToken(refreshTokenFromCookie);
-
-                        var newRefreshToken = TokenUtility.GenerateRefreshToken();
-
-                        var newAccessToken = TokenUtility.GenerateAccessTokenFromRefreshToken(refreshTokenFromCookie, _config["JwtToken:SecretKey"], userId);
-
-                        _jwtRefreshTokenRepository.SaveRefreshToken(newRefreshToken, userId, true);
-
-                        Response.Cookies.Append("RefreshToken", newRefreshToken, CookieTokenOptions.DevRefreshTokenCookie);
-                        Response.Cookies.Append("AccessToken", newAccessToken, CookieTokenOptions.DevAccessTokenCookie);
-
-                        return Ok();
-                    }
-                    catch (Exception ex) { 
-                         return BadRequest(ex.Message);
-                    }
-                }
-                
-                return Unauthorized();
-            }
-
-            return BadRequest();
-        }
     }
 }
