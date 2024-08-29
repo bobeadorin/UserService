@@ -43,7 +43,7 @@
             HttpOnly = true,
             Secure = true,
             IsEssential = true,
-            Expires = DateTime.UtcNow.AddDays(0),
+            Expires = DateTimeOffset.UtcNow.AddDays(5),
             SameSite = SameSiteMode.None,
             Path = "/"
 
@@ -53,7 +53,7 @@
             HttpOnly = true,
             Secure = true,
             IsEssential = true,
-            Expires = DateTime.UtcNow.AddMinutes(0),
+            Expires = DateTimeOffset.UtcNow.AddDays(5),
             SameSite = SameSiteMode.None,
             Path = "/"
         };

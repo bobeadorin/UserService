@@ -14,7 +14,7 @@ namespace UserService.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            var endpoint = context.GetEndpoint();
+             var endpoint = context.GetEndpoint();
 
             if (endpoint != null)
             {
