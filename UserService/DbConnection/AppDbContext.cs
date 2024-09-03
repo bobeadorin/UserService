@@ -2,6 +2,7 @@
 using UserService.Constant;
 using UserService.Models;
 using UserService.Utility;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace UserService.DbConnection
 {
@@ -36,6 +37,27 @@ namespace UserService.DbConnection
                 PhoneNumber = DbSeedData.PhoneNumber,
                 Likes = DbSeedData.Likes,
                 PostsNumber = DbSeedData.PostsNumber,
+                Followers = new List<Guid>(),
+                Following = new List<Guid>(),
+                Posts = new List<Guid>(),
+            } , new User
+            {
+
+                Id = new Guid("D2D49CF2-0FF4-4C6F-FD4D-08DCC7BE62E6"),
+                Email = "test@example.com",
+                Password = Hashing.toSHA256("Masina001@"),
+                Username = "TestUser",
+                FirstName = "Test",
+                LastName = "Test",
+                Country = "USA",
+                Currency = "USD",
+                Address = "Str.Ciuperceni",
+                PhoneNumber = "0730733456",
+                Likes = 0,
+                PostsNumber = DbSeedData.PostsNumber,
+                Followers = new List<Guid>(),
+                Following = new List<Guid>(),
+                Posts = new List<Guid>(),
             });
 
             modelBuilder.Entity<ServiceLogin>().HasData(new ServiceLogin

@@ -1,7 +1,5 @@
-﻿using Azure;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 using UserService.AuthService;
 using UserService.AuthService.Models;
 using UserService.Constant;
@@ -32,6 +30,23 @@ namespace UserService.Controllers
         }
 
         [Authorize]
+        [HttpGet("/ping")]
+        public IActionResult GetAuthState()
+        {
+            var accessToken = Request.Cookies[CookieConfig.AccessToken];
+            var refreshToken = Request.Cookies[CookieConfig.RefreshToken];
+
+            if(accessToken == null && refreshToken == null) return Unauthorized("accessToken and refreshToken null");
+            if (accessToken == null ) return Unauthorized("accessToken null");
+            if (refreshToken == null) return Unauthorized("accessToken null");
+
+            
+            var user = _userRepository.GetUserDataByToken(accessToken);
+
+            return Ok(new PingResponse { Id = user.Id , Username = user.Username});
+        }
+
+        [Authorize]
         [HttpGet("/getUserById/{id}")]
         public IActionResult GetUserById([FromRoute] Guid id) {
             try
@@ -57,17 +72,21 @@ namespace UserService.Controllers
 
             var userData = _userRepository.GetUserDataByToken(accessToken);
 
-            return Ok(new UserProfileData
-            {
-               Username = userData.Username,
-               FirstName = userData.FirstName,
-               LastName = userData.LastName,    
-               PostsNumber = userData.PostsNumber,
-               FollowersNumber = userData.FollowersNumber,
-               Likes = userData.Likes
-            });
+            return Ok(
+                new UserProfileVisited {userData = new UserProfileData
+                {
+                    Username = userData.Username,
+                    FirstName = userData.FirstName,
+                    LastName = userData.LastName,
+                    PostsNumber = userData.PostsNumber,
+                    FollowersNumber = userData.Followers.Count,
+                    Likes = userData.Likes
+                },
+                isFollowed = false
+                });
+           
         }
-
+        
         [HttpPost("/login")]
         public IActionResult Login([FromBody] UserLoginModel user)
         {
@@ -94,9 +113,8 @@ namespace UserService.Controllers
             Response.Cookies.Append(CookieConfig.RefreshToken, refreshToken, CookieTokenOptions.DevRefreshTokenCookie);
 
 
-            return Ok(userData);
+            return Ok(true);
         }
-
 
         [HttpGet("/refresh")]
         public IActionResult Refresh()
@@ -126,7 +144,6 @@ namespace UserService.Controllers
             }
         }
 
-
         [HttpGet("/logout")]
         public IActionResult Logout()
         {
@@ -139,9 +156,6 @@ namespace UserService.Controllers
             Response.Cookies.Append("RefreshToken", String.Empty, CookieTokenOptions.DevRefreshTokenCookieLogout);
             return Ok("logoutCompleted");
          }
-
-
-
 
         [HttpPost("/register")]
         public async Task<IActionResult> RegisterUser([FromBody]User user)
@@ -162,6 +176,42 @@ namespace UserService.Controllers
             return Ok(_userRepository.GetAllUsers());
         }
 
+        [HttpGet("/getUserByUsername/{username}")]
+        public IActionResult GetUser(string username)
+        {
+            var accessToken = Request.Cookies[CookieConfig.AccessToken];
+            if(accessToken == null) return Unauthorized();
 
+            try
+            {
+                var userId = TokenUtility.RetriveDataFromToken(accessToken);
+                var result = _userRepository.GetUserByUsername(username ,userId);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+
+                return NotFound(ex.Message);
+            }
+        }
+
+        [Authorize]
+        [HttpPut("/FollowUser")]
+        public IActionResult FollowUser([FromBody] string username)
+        {
+            var accessToken = Request.Cookies[CookieConfig.AccessToken];
+
+            if(accessToken != null)
+            {
+                var userId = TokenUtility.RetriveDataFromToken(accessToken);
+                var followUser = _userRepository.AddFollowerIdToUserByUsername(username, userId);
+
+                if (followUser)
+                {
+                    return Ok();
+                }
+            }
+            return BadRequest();
+        }
     }
 }

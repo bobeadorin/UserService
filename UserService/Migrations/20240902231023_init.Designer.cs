@@ -12,7 +12,7 @@ using UserService.DbConnection;
 namespace UserService.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20240826195225_init")]
+    [Migration("20240902231023_init")]
     partial class init
     {
         /// <inheritdoc />
@@ -105,8 +105,14 @@ namespace UserService.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Followers")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("FollowersNumber")
                         .HasColumnType("int");
+
+                    b.Property<string>("Following")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
                         .IsRequired()
@@ -129,16 +135,11 @@ namespace UserService.Migrations
                     b.Property<int>("PostsNumber")
                         .HasColumnType("int");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("Users");
 
@@ -151,26 +152,36 @@ namespace UserService.Migrations
                             Currency = "USD",
                             Email = "bobeadorin@yahoo.com",
                             FirstName = "Joe",
+                            Followers = "[]",
                             FollowersNumber = 0,
+                            Following = "[]",
                             LastName = "Doe",
                             Likes = 0,
                             Password = "1f3085b93c4df1d85d28aa5d64efa559c0754bfd68dff0092a8eee16659f917c",
                             PhoneNumber = "0730733429",
+                            Posts = "[]",
                             PostsNumber = 0,
                             Username = "JoeDoeTheFirst"
+                        },
+                        new
+                        {
+                            Id = new Guid("d2d49cf2-0ff4-4c6f-fd4d-08dcc7be62e6"),
+                            Address = "Str.Ciuperceni",
+                            Country = "USA",
+                            Currency = "USD",
+                            Email = "test@example.com",
+                            FirstName = "Test",
+                            Followers = "[]",
+                            FollowersNumber = 0,
+                            Following = "[]",
+                            LastName = "Test",
+                            Likes = 0,
+                            Password = "8843be720a68ea1601d3e6e1ee12451572e516a120bf86c015573beca3c2d23e",
+                            PhoneNumber = "0730733456",
+                            Posts = "[]",
+                            PostsNumber = 0,
+                            Username = "TestUser"
                         });
-                });
-
-            modelBuilder.Entity("UserService.Models.User", b =>
-                {
-                    b.HasOne("UserService.Models.User", null)
-                        .WithMany("Followers")
-                        .HasForeignKey("UserId");
-                });
-
-            modelBuilder.Entity("UserService.Models.User", b =>
-                {
-                    b.Navigation("Followers");
                 });
 #pragma warning restore 612, 618
         }

@@ -18,9 +18,10 @@ namespace UserService.Models
         public string PhoneNumber { get; set; }
         public string Address { get; set; }
         public int Likes { get; set; }
-        public List<User>? Followers { get; set; }
+        public List<Guid>? Followers { get; set; }
+        public List<Guid>? Following { get; set; }
         public int FollowersNumber { get; set; }
         public List<Guid>? Posts { get; set; }
-        public int PostsNumber { get; set; } 
+        public int PostsNumber { get; set; }
     }
 }

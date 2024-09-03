@@ -6,6 +6,7 @@ using UserService.SqlDbUserRepository.Interfaces;
 using UserService.Constant;
 using UserService.Utility;
 using UserService.AuthService;
+using System.Linq;
 
 namespace UserService.SqlDbUserRepository
 {
@@ -38,6 +39,85 @@ namespace UserService.SqlDbUserRepository
 
             throw new UserServiceException(ErrorMessages.UserNotFound, "1");
         }
+
+        public UserProfileVisited GetUserByUsername(string username,Guid userId)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Username == username);
+            var loggedInUser = _context.Users.FirstOrDefault(u => u.Id == userId);
+
+            if (user != null && loggedInUser != null)
+            {
+                if (loggedInUser.Following.Contains(user.Id))
+                {
+                    return new UserProfileVisited
+                    {
+                        userData = new UserProfileData
+                        {
+                            Username = user.Username,
+                            FirstName = user.FirstName,
+                            LastName = user.LastName,
+                            Likes = user.Likes,
+                            PostsNumber = user.PostsNumber,
+                            FollowersNumber = user.Followers.Count,
+                        },
+                        isFollowed = true
+                    };
+                }
+            
+                return new UserProfileVisited
+                {
+                    userData = new UserProfileData
+                    {
+                        Username = user.Username,
+                        FirstName = user.FirstName,
+                        LastName = user.LastName,
+                        Likes = user.Likes,
+                        PostsNumber = user.PostsNumber,
+                        FollowersNumber = user.Followers.Count,
+                    },
+                    isFollowed = false
+                };
+            }
+
+            throw new UserServiceException(ErrorMessages.UserNotFound, "1");
+        }
+
+
+        public bool AddFollowerIdToUserByUsername(string username, Guid UserId)
+        {
+            var followingUser = _context.Users.FirstOrDefault(u => u.Username == username);
+            var follower = _context.Users.FirstOrDefault(u => u.Id == UserId);
+
+            if(followingUser != null && follower != null) {
+
+                if (follower.Following.Contains(followingUser.Id))
+                {
+                    followingUser.Followers.Remove(UserId);
+                    follower.Following.Remove(followingUser.Id);
+
+                    _context.Users.Update(followingUser);
+                    _context.Users.Update(follower);
+
+                    _context.SaveChanges();
+                }
+                else
+                {
+                    followingUser.Followers.Add(UserId);
+                    follower.Following.Add(followingUser.Id);
+
+                    _context.Users.Update(followingUser);
+                    _context.Users.Update(follower);
+
+                    _context.SaveChanges();
+                }
+
+                
+                return true;
+            }
+
+            return false;
+        }
+       
 
         public User GetUserDataByToken(string token) { 
 
@@ -80,6 +160,9 @@ namespace UserService.SqlDbUserRepository
                     FirstName = user.FirstName,
                     LastName = user.LastName,
                     PhoneNumber = user.PhoneNumber,
+                    Followers = new List<Guid>(),
+                    Following = new List<Guid>(),
+                    Posts = new List<Guid>(),
                 });
 
                 await _context.SaveChangesAsync();
