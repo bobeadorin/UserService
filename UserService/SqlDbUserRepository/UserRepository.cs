@@ -53,6 +53,7 @@ namespace UserService.SqlDbUserRepository
                     {
                         userData = new UserProfileData
                         {
+                            Id = user.Id,
                             Username = user.Username,
                             FirstName = user.FirstName,
                             LastName = user.LastName,
@@ -68,6 +69,7 @@ namespace UserService.SqlDbUserRepository
                 {
                     userData = new UserProfileData
                     {
+                        Id = user.Id,
                         Username = user.Username,
                         FirstName = user.FirstName,
                         LastName = user.LastName,
